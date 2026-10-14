@@ -2,7 +2,7 @@
 PERT and Critical Path Analysis (CPA) Calculation Engine
 Implements deterministic & probabilistic scheduling computations:
 - Expected Time TE = (O + 4M + P) / 6
-- Variance V = ((P - O) / 6)^2
+- Variance V = ((P - O) / 6)^2 (Full Float Precision)
 - Forward pass: Early Start (ES), Early Finish (EF)
 - Backward pass: Late Start (LS), Late Finish (LF)
 - Total Slack: Float = LS - ES = LF - EF
@@ -115,7 +115,6 @@ class PERTEngine:
             stack.append(node)
             for neighbor in graph[node]:
                 if color[neighbor] == 1:
-                    # Found back-edge (cycle)
                     cycle_start_idx = stack.index(neighbor)
                     cycle_nodes.extend(stack[cycle_start_idx:] + [neighbor])
                     return True
@@ -133,10 +132,10 @@ class PERTEngine:
                     raise PERTValidationError(f"Cyclic dependency detected in project graph: {cycle_repr}")
 
     def compute(self) -> Dict[str, Any]:
-        """Runs the complete PERT and CPM computations."""
+        """Runs the complete PERT and CPM computations using unrounded float precision."""
         self.validate()
 
-        # Initialize internal structures
+        # Initialize internal structures with raw float precision
         for act in self.raw_activities:
             aid = str(act["id"]).strip()
             name = str(act.get("name", aid)).strip()
@@ -156,9 +155,9 @@ class PERTEngine:
                 "optimistic": o,
                 "most_likely": m,
                 "pessimistic": p,
-                "te": round(te, 4),
-                "variance": round(var, 4),
-                "std_dev": round(std_dev, 4),
+                "te": te,
+                "variance": var,
+                "std_dev": std_dev,
                 "predecessors": preds,
                 "successors": [],
                 "es": 0.0,
@@ -186,11 +185,10 @@ class PERTEngine:
                 act["es"] = 0.0
             else:
                 act["es"] = max(self.activities[p]["ef"] for p in act["predecessors"])
-            act["ef"] = round(act["es"] + act["te"], 4)
+            act["ef"] = act["es"] + act["te"]
 
         # Overall Project Duration
         self.project_duration = max(act["ef"] for act in self.activities.values())
-        self.project_duration = round(self.project_duration, 4)
 
         # Backward Pass: Compute Late Finish (LF) and Late Start (LS)
         for aid in reversed(topo_order):
@@ -200,11 +198,11 @@ class PERTEngine:
                 act["lf"] = self.project_duration
             else:
                 act["lf"] = min(self.activities[s]["ls"] for s in succs)
-            act["ls"] = round(act["lf"] - act["te"], 4)
-            act["slack"] = round(act["lf"] - act["ef"], 4)
+            act["ls"] = act["lf"] - act["te"]
+            act["slack"] = act["lf"] - act["ef"]
 
             # Floating point tolerance check for critical status
-            if abs(act["slack"]) < 1e-4:
+            if abs(act["slack"]) < 1e-6:
                 act["is_critical"] = True
                 act["slack"] = 0.0
             else:
@@ -214,10 +212,10 @@ class PERTEngine:
         self.critical_paths = self._find_critical_paths()
         self.critical_path = self.critical_paths[0] if self.critical_paths else []
 
-        # Calculate project variance and standard deviation along primary critical path
+        # Calculate project variance and std dev at full float precision along primary critical path
         cp_var = sum(self.activities[aid]["variance"] for aid in self.critical_path)
-        self.project_variance = round(cp_var, 4)
-        self.project_std_dev = round(math.sqrt(cp_var), 4)
+        self.project_variance = cp_var
+        self.project_std_dev = math.sqrt(cp_var)
 
         return self.get_summary()
 
@@ -228,7 +226,6 @@ class PERTEngine:
         order = []
 
         while queue:
-            # Deterministic ordering by sorted ID
             queue.sort()
             curr = queue.pop(0)
             order.append(curr)
@@ -249,14 +246,12 @@ class PERTEngine:
 
         def dfs_path(curr: str, path: List[str]):
             if curr in end_nodes and len(path) > 0:
-                # Validate path duration matches project duration
                 path_duration = sum(self.activities[node]["te"] for node in path)
-                if abs(path_duration - self.project_duration) < 1e-3:
+                if abs(path_duration - self.project_duration) < 1e-4:
                     all_paths.append(list(path))
             for succ in self.successors[curr]:
                 if self.activities[succ]["is_critical"]:
-                    # Verify edge continuity (EF of curr == ES of succ)
-                    if abs(self.activities[curr]["ef"] - self.activities[succ]["es"]) < 1e-3:
+                    if abs(self.activities[curr]["ef"] - self.activities[succ]["es"]) < 1e-4:
                         path.append(succ)
                         dfs_path(succ, path)
                         path.pop()
@@ -284,10 +279,10 @@ class PERTEngine:
             prob = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
 
         return {
-            "target_deadline": target_deadline,
-            "project_duration": self.project_duration,
-            "project_variance": self.project_variance,
-            "project_std_dev": self.project_std_dev,
+            "target_deadline": round(target_deadline, 2),
+            "project_duration": round(self.project_duration, 4),
+            "project_variance": round(self.project_variance, 4),
+            "project_std_dev": round(self.project_std_dev, 4),
             "z_score": round(z, 4) if abs(z) != float("inf") else str(z),
             "probability_percent": round(prob * 100.0, 2),
             "assumptions": [
@@ -298,12 +293,36 @@ class PERTEngine:
         }
 
     def get_summary(self) -> Dict[str, Any]:
-        """Returns structured JSON summary of PERT/CPM analysis."""
+        """
+        Returns structured summary. Values are rounded to 4 decimal places strictly for display/serialization,
+        while internal computations maintained full float precision.
+        """
+        formatted_activities = []
+        for act in self.activities.values():
+            formatted_activities.append({
+                "id": act["id"],
+                "name": act["name"],
+                "optimistic": act["optimistic"],
+                "most_likely": act["most_likely"],
+                "pessimistic": act["pessimistic"],
+                "te": round(act["te"], 4),
+                "variance": round(act["variance"], 4),
+                "std_dev": round(act["std_dev"], 4),
+                "predecessors": act["predecessors"],
+                "successors": act["successors"],
+                "es": round(act["es"], 4),
+                "ef": round(act["ef"], 4),
+                "ls": round(act["ls"], 4),
+                "lf": round(act["lf"], 4),
+                "slack": round(act["slack"], 4),
+                "is_critical": act["is_critical"],
+            })
+
         return {
-            "project_duration": self.project_duration,
+            "project_duration": round(self.project_duration, 4),
             "critical_path": self.critical_path,
             "critical_paths": self.critical_paths,
-            "project_variance": self.project_variance,
-            "project_std_dev": self.project_std_dev,
-            "activities": list(self.activities.values()),
+            "project_variance": round(self.project_variance, 4),
+            "project_std_dev": round(self.project_std_dev, 4),
+            "activities": formatted_activities,
         }

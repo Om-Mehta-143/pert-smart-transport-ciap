@@ -1,7 +1,7 @@
 /**
  * PERT & Critical Path Analyzer Frontend Logic
- * Implements activity CRUD, validation error dispatching, SVG network diagram rendering,
- * and Gantt chart generation.
+ * Implements activity CRUD, validation error dispatching, SVG AON network diagram rendering,
+ * Gantt chart generation, and real-time /health endpoint polling.
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -13,6 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const pertForm = document.getElementById("pert-form");
     const errorAlert = document.getElementById("error-alert");
     const resultsSummary = document.getElementById("results-summary");
+    const healthPill = document.getElementById("health-pill");
+
+    // Initiate real health probe
+    pollSystemHealth();
+    setInterval(pollSystemHealth, 30000);
 
     // Preload default Bus Transit system dataset on first load
     loadSampleDataset("/api/sample/transit");
@@ -73,9 +78,30 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".tab-content").forEach((c) => c.classList.add("hidden"));
             btn.classList.add("active");
             const targetId = btn.getAttribute("data-tab");
-            document.getElementById(targetId).classList.remove("hidden");
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) targetEl.classList.remove("hidden");
         });
     });
+
+    // --- System Health Probe ---
+    async function pollSystemHealth() {
+        if (!healthPill) return;
+        try {
+            const res = await fetch("/health");
+            if (res.ok) {
+                const data = await res.json();
+                healthPill.className = "nav-link status-pill status-healthy";
+                healthPill.innerHTML = `<span class="pulse-dot"></span> System: Healthy`;
+                healthPill.title = `Service: ${data.service} | Status: ${data.status}`;
+            } else {
+                healthPill.className = "nav-link status-pill status-degraded";
+                healthPill.innerHTML = `<span class="pulse-dot"></span> System: Degraded`;
+            }
+        } catch {
+            healthPill.className = "nav-link status-pill status-offline";
+            healthPill.innerHTML = `<span class="pulse-dot"></span> System: Offline`;
+        }
+    }
 
     // --- Helper Functions ---
 
@@ -100,9 +126,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <td><input type="text" class="act-id" value="${data.id || ""}" placeholder="e.g. A" required></td>
             <td><input type="text" class="act-name" value="${data.name || ""}" placeholder="Activity Name"></td>
             <td><input type="text" class="act-preds" value="${(data.predecessors || []).join(", ")}" placeholder="e.g. A, B"></td>
-            <td><input type="number" step="0.1" class="act-o" value="${data.optimistic !== undefined ? data.optimistic : ""}" placeholder="O" required></td>
-            <td><input type="number" step="0.1" class="act-m" value="${data.most_likely !== undefined ? data.most_likely : ""}" placeholder="M" required></td>
-            <td><input type="number" step="0.1" class="act-p" value="${data.pessimistic !== undefined ? data.pessimistic : ""}" placeholder="P" required></td>
+            <td><input type="number" step="0.1" class="act-o" value="${data.optimistic !== undefined ? data.optimistic : ""}" placeholder="O (Days)" required></td>
+            <td><input type="number" step="0.1" class="act-m" value="${data.most_likely !== undefined ? data.most_likely : ""}" placeholder="M (Days)" required></td>
+            <td><input type="number" step="0.1" class="act-p" value="${data.pessimistic !== undefined ? data.pessimistic : ""}" placeholder="P (Days)" required></td>
             <td><button type="button" class="btn-danger-sm btn-del-row" title="Delete Row">X</button></td>
         `;
 
@@ -167,18 +193,19 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderResults(data, probData) {
         resultsSummary.classList.remove("hidden");
 
-        // Top Metrics
-        document.getElementById("val-duration").textContent = data.project_duration.toFixed(2);
+        // Top Metrics (Days unit explicit)
+        document.getElementById("val-duration").textContent = Number(data.project_duration).toFixed(2);
         document.getElementById("val-critical-path").textContent = data.critical_path.join(" -> ");
-        document.getElementById("val-cp-count").textContent = `${data.critical_paths.length} Critical Path(s) Found`;
-        document.getElementById("val-variance").textContent = data.project_variance.toFixed(4);
-        document.getElementById("val-std-dev").textContent = data.project_std_dev.toFixed(4);
+        document.getElementById("val-cp-count").textContent = `${data.critical_paths.length} Critical Path(s) Identified`;
+        // Project Variance displayed to 4 decimals (e.g., 5.5556 for transit dataset)
+        document.getElementById("val-variance").textContent = Number(data.project_variance).toFixed(4);
+        document.getElementById("val-std-dev").textContent = Number(data.project_std_dev).toFixed(4);
 
         // Probability Box
         const probCard = document.getElementById("prob-card");
         if (probData) {
             probCard.classList.remove("hidden");
-            document.getElementById("prob-target").textContent = `${probData.target_deadline} units`;
+            document.getElementById("prob-target").textContent = `${probData.target_deadline} Days`;
             document.getElementById("prob-zscore").textContent = probData.z_score;
             document.getElementById("prob-percent").textContent = `${probData.probability_percent}%`;
 
@@ -193,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
             probCard.classList.add("hidden");
         }
 
-        // Table
+        // Results Table
         const tbody = document.getElementById("results-tbody");
         tbody.innerHTML = "";
         data.activities.forEach((act) => {
@@ -207,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${act.name}</td>
                 <td>${act.predecessors.join(", ") || "-"}</td>
                 <td>${act.te.toFixed(2)}</td>
-                <td>${act.variance.toFixed(3)}</td>
+                <td>${act.variance.toFixed(4)}</td>
                 <td>${act.es.toFixed(2)}</td>
                 <td>${act.ef.toFixed(2)}</td>
                 <td>${act.ls.toFixed(2)}</td>
@@ -238,17 +265,16 @@ document.addEventListener("DOMContentLoaded", () => {
         // Group into topological rank layers based on ES
         const layers = {};
         activities.forEach((a) => {
-            // Find depth by predecessor chains
             const depth = calculateDepth(a.id, actMap);
             if (!layers[depth]) layers[depth] = [];
             layers[depth].push(a);
         });
 
         const sortedDepths = Object.keys(layers).map(Number).sort((a, b) => a - b);
-        const colWidth = 180;
-        const rowHeight = 90;
-        const startX = 60;
-        const startY = 60;
+        const colWidth = 190;
+        const rowHeight = 95;
+        const startX = 65;
+        const startY = 65;
 
         const nodePositions = {};
         let maxRow = 1;
@@ -265,15 +291,14 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        const totalWidth = Math.max(800, startX + sortedDepths.length * colWidth + 80);
+        const totalWidth = Math.max(840, startX + sortedDepths.length * colWidth + 80);
         const totalHeight = Math.max(300, startY + maxRow * rowHeight + 60);
 
-        // SVG string construction
         let svg = `<svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
         svg += `
             <defs>
                 <marker id="arrow-normal" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
                 </marker>
                 <marker id="arrow-critical" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
@@ -297,20 +322,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Draw nodes
+        // Draw AON Nodes
         activities.forEach((act) => {
             const pos = nodePositions[act.id];
             const isCrit = act.is_critical;
-            const nodeFill = isCrit ? "#7f1d1d" : "#1e293b";
-            const strokeColor = isCrit ? "#ef4444" : "#06b6d4";
+            const nodeFill = isCrit ? "#7f1d1d" : "#0f3460";
+            const strokeColor = isCrit ? "#ef4444" : "#3b82f6";
             const strokeWidth = isCrit ? "2.5" : "1.5";
 
             svg += `
                 <g class="network-node" data-id="${act.id}">
-                    <circle cx="${pos.x}" cy="${pos.y}" r="24" fill="${nodeFill}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
+                    <circle cx="${pos.x}" cy="${pos.y}" r="25" fill="${nodeFill}" stroke="${strokeColor}" stroke-width="${strokeWidth}" />
                     <text x="${pos.x}" y="${pos.y - 3}" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle" font-family="monospace">${act.id}</text>
-                    <text x="${pos.x}" y="${pos.y + 11}" fill="#9ca3af" font-size="9" text-anchor="middle">${act.te.toFixed(1)}d</text>
-                    <text x="${pos.x}" y="${pos.y + 38}" fill="${isCrit ? "#fca5a5" : "#cbd5e1"}" font-size="10" text-anchor="middle">${act.name.substring(0, 14)}</text>
+                    <text x="${pos.x}" y="${pos.y + 11}" fill="#93c5fd" font-size="9" text-anchor="middle">${act.te.toFixed(1)}d</text>
+                    <text x="${pos.x}" y="${pos.y + 38}" fill="${isCrit ? "#fca5a5" : "#cbd5e1"}" font-size="10" text-anchor="middle">${act.name.substring(0, 15)}</text>
                 </g>
             `;
         });
@@ -348,8 +373,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="gantt-track">
                     <div class="gantt-bar ${act.is_critical ? "critical" : "normal"}"
                          style="left: ${leftPct.toFixed(2)}%; width: ${widthPct.toFixed(2)}%;"
-                         title="ES: ${act.es}, EF: ${act.ef}, Slack: ${act.slack}">
-                        ${act.te.toFixed(1)}
+                         title="ES: ${act.es}d, EF: ${act.ef}d, Slack: ${act.slack}d">
+                        ${act.te.toFixed(1)}d
                     </div>
                 </div>
             `;

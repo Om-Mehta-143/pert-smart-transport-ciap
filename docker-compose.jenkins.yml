@@ -1,0 +1,39 @@
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: local-jenkins
+    restart: unless-stopped
+    user: root # Needed to access docker.sock for Docker pipeline builds
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ciap-net
+
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: local-sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - ciap-net
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+
+networks:
+  ciap-net:
+    driver: bridge

@@ -1,6 +1,6 @@
 """
 Automated Unit Tests for PERT and Critical Path Calculation Engine
-Contains 12 comprehensive unit tests with hand-verified calculations.
+Contains 13 comprehensive unit tests with hand-verified calculations.
 """
 
 import math
@@ -22,7 +22,7 @@ class TestPERTEngine(unittest.TestCase):
     Project Duration = 6.0
     Critical Path = ['A', 'B']
     Project Variance = 1/9 + 4/9 = 5/9 ≈ 0.5556
-    Project StdDev = sqrt(5/9) = sqrt(0.555555...) ≈ 0.7454
+    Project StdDev = sqrt(5/9) ≈ 0.7454
     """
 
     def test_01_hand_calculation_case_linear(self):
@@ -47,7 +47,7 @@ class TestPERTEngine(unittest.TestCase):
 
     """
     HAND CALCULATION REFERENCE CASE 2 (Diamond graph with slack on branch):
-    Node Start A: O=3, M=3, P=3 (deterministic 3) -> TE=3, Var=0, ES=0, EF=3
+    Node Start A: O=3, M=3, P=3 -> TE=3, Var=0, ES=0, EF=3
     Branch 1: B (Pred=[A]): O=4, M=4, P=4 -> TE=4, ES=3, EF=7
     Branch 2: C (Pred=[A]): O=2, M=2, P=2 -> TE=2, ES=3, EF=5
     Join: D (Pred=[B, C]): O=5, M=5, P=5 -> TE=5
@@ -155,25 +155,20 @@ class TestPERTEngine(unittest.TestCase):
         For Deadline = 12, Z = (12-10)/2 = 1.0 -> Probability ≈ 84.13%
         For Deadline = 6,  Z = (6-10)/2 = -2.0 -> Probability ≈ 2.28%
         """
-        # Create a single task with TE=10, StdDev=2:
-        # (P - O) / 6 = 2 => P - O = 12. Let O=4, M=10, P=16 -> TE = (4 + 40 + 16)/6 = 60/6 = 10.
         activities = [
             {"id": "A", "name": "Single Task", "predecessors": [], "optimistic": 4, "most_likely": 10, "pessimistic": 16}
         ]
         engine = PERTEngine(activities)
         engine.compute()
 
-        # Target = 10.0 (Expect 50%)
         p50 = engine.calculate_probability(10.0)
         self.assertAlmostEqual(p50["z_score"], 0.0, places=2)
         self.assertAlmostEqual(p50["probability_percent"], 50.0, places=1)
 
-        # Target = 12.0 (Z = 1.0, Expect ~84.13%)
         p84 = engine.calculate_probability(12.0)
         self.assertAlmostEqual(p84["z_score"], 1.0, places=2)
         self.assertAlmostEqual(p84["probability_percent"], 84.13, delta=0.2)
 
-        # Target = 6.0 (Z = -2.0, Expect ~2.28%)
         p02 = engine.calculate_probability(6.0)
         self.assertAlmostEqual(p02["z_score"], -2.0, places=2)
         self.assertAlmostEqual(p02["probability_percent"], 2.28, delta=0.2)
@@ -194,10 +189,8 @@ class TestPERTEngine(unittest.TestCase):
         engine = PERTEngine(bus_dataset)
         res = engine.compute()
 
-        self.assertGreater(res["project_duration"], 0)
-        self.assertTrue(len(res["critical_path"]) > 0)
-        self.assertIn("A", res["critical_path"])
-        self.assertIn("I", res["critical_path"])
+        self.assertAlmostEqual(res["project_duration"], 24.0, places=3)
+        self.assertEqual(res["critical_path"], ["A", "C", "F", "G", "H", "I"])
 
     def test_11_ciap_project_delivery_plan_dataset(self):
         """Validates the 3-day CIAP Microproject delivery schedule itself."""
@@ -216,7 +209,6 @@ class TestPERTEngine(unittest.TestCase):
         engine = PERTEngine(ciap_plan)
         res = engine.compute()
 
-        # The project plan has a strictly positive duration and all activities have defined slacks
         self.assertGreater(res["project_duration"], 20.0)
         self.assertIn("T1", res["critical_path"])
         self.assertIn("T10", res["critical_path"])
@@ -226,6 +218,35 @@ class TestPERTEngine(unittest.TestCase):
         engine = PERTEngine([])
         with self.assertRaises(PERTValidationError):
             engine.compute()
+
+    def test_13_sample_transit_full_precision_variance(self):
+        """
+        Verifies that variance and std deviation are computed at full float precision
+        without premature rounding error, asserting project variance for the sample dataset
+        equals exactly 5.5556 when displayed.
+        Critical Path: A (Var=4/9) + C (Var=36/9) + F (Var=4/9) + G (Var=1/9) + H (Var=1/9) + I (Var=4/9) = 50/9 = 5.555555...
+        """
+        bus_dataset = [
+            {"id": "A", "name": "Requirements & Route Specs", "predecessors": [], "optimistic": 2, "most_likely": 4, "pessimistic": 6},
+            {"id": "B", "name": "GPS Module Hardware Proc", "predecessors": ["A"], "optimistic": 3, "most_likely": 6, "pessimistic": 9},
+            {"id": "C", "name": "Backend Ingestion API", "predecessors": ["A"], "optimistic": 4, "most_likely": 7, "pessimistic": 16},
+            {"id": "D", "name": "Firmware & GPS Testing", "predecessors": ["B"], "optimistic": 2, "most_likely": 5, "pessimistic": 8},
+            {"id": "E", "name": "Mobile Rider UI", "predecessors": ["A"], "optimistic": 3, "most_likely": 6, "pessimistic": 9},
+            {"id": "F", "name": "Cloud Stream Processor", "predecessors": ["C"], "optimistic": 2, "most_likely": 4, "pessimistic": 6},
+            {"id": "G", "name": "System Integration", "predecessors": ["D", "E", "F"], "optimistic": 2, "most_likely": 3, "pessimistic": 4},
+            {"id": "H", "name": "Security Audit & PenTest", "predecessors": ["G"], "optimistic": 1, "most_likely": 2, "pessimistic": 3},
+            {"id": "I", "name": "Pilot Fleet Rollout", "predecessors": ["H"], "optimistic": 1, "most_likely": 3, "pessimistic": 5},
+        ]
+        engine = PERTEngine(bus_dataset)
+        res = engine.compute()
+
+        # Raw float precision check
+        self.assertAlmostEqual(engine.project_variance, 50.0 / 9.0, places=9)
+        self.assertAlmostEqual(engine.project_std_dev, math.sqrt(50.0 / 9.0), places=9)
+
+        # Rounded display output check
+        self.assertEqual(res["project_variance"], 5.5556)
+        self.assertEqual(res["project_std_dev"], 2.357)
 
 
 if __name__ == "__main__":

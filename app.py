@@ -72,10 +72,15 @@ def sdg():
     return render_template("sdg.html")
 
 
+@app.route("/health")
 @app.route("/healthz")
-def healthz():
-    """Liveness and readiness probe for Docker / AWS ALB."""
-    return jsonify({"status": "healthy", "service": "pert-smart-transport-ciap"}), 200
+def health():
+    """Liveness and readiness health probe for UI badge, Docker, and AWS ALB."""
+    return jsonify({
+        "status": "healthy",
+        "service": "pert-smart-transport-ciap",
+        "precision": "full_float_precision"
+    }), 200
 
 
 @app.route("/api/sample/transit")

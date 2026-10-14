@@ -1,6 +1,6 @@
 /*
   DevSecOps CIAP Microproject - Custom Style System
-  Theme: Dark Slate & Precision Engineering
+  Theme: Dark Slate & Transit Operations Precision
 */
 
 :root {
@@ -12,9 +12,15 @@
     --text-primary: #f3f4f6;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
+    
+    /* Transit Identity Palette */
+    --transit-blue: #2563eb;
+    --transit-cyan: #06b6d4;
+    --transit-amber: #f59e0b;
+    --transit-emerald: #10b981;
+    
     --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --accent: #06b6d4;
+    --primary-hover: #1d4ed8;
     --critical: #ef4444;
     --critical-glow: rgba(239, 68, 68, 0.25);
     --success: #10b981;
@@ -38,11 +44,11 @@ body {
     flex-direction: column;
 }
 
-/* Navbar */
+/* Navbar & Transit Route-Line Header */
 .navbar {
     background-color: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    padding: 0.85rem 1.5rem;
+    border-bottom: 2px solid #1e293b;
+    padding: 0.75rem 1.5rem;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -54,28 +60,101 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.85rem;
+}
+
+.transit-icon-box {
+    background: linear-gradient(135deg, #1e3a8a, #0284c7);
+    color: #ffffff;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.brand-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.brand-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
 }
 
 .brand-badge {
-    background-color: var(--primary);
+    background: linear-gradient(90deg, #1d4ed8, #0284c7);
     color: #ffffff;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
 }
 
 .brand h1 {
     font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+}
+
+/* Transport Route-Line Motif */
+.route-line-motif {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+}
+
+.route-node {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #111827;
+}
+
+.node-depot { background-color: var(--transit-amber); }
+.node-gps   { background-color: var(--transit-cyan); }
+.node-cloud { background-color: var(--primary); }
+.node-fleet { background-color: var(--transit-emerald); }
+
+.route-segment {
+    height: 2px;
+    width: 18px;
+    background-color: #374151;
+}
+
+.seg-active {
+    background: linear-gradient(90deg, var(--transit-cyan), var(--primary));
+}
+
+.seg-branch {
+    background: linear-gradient(90deg, var(--primary), var(--transit-emerald));
+}
+
+.route-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    background: #1e293b;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    margin-left: 0.25rem;
+    letter-spacing: 0.05em;
 }
 
 .nav-links {
@@ -87,22 +166,58 @@ body {
 .nav-link {
     color: var(--text-secondary);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 500;
     transition: color 0.15s ease;
 }
 
 .nav-link:hover, .nav-link.active {
-    color: var(--accent);
+    color: var(--transit-cyan);
 }
 
+/* Real Health Pill */
 .status-pill {
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--success) !important;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    padding: 0.2rem 0.6rem;
+    padding: 0.25rem 0.65rem;
     border-radius: 9999px;
     font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid transparent;
+}
+
+.status-checking {
+    background: rgba(107, 114, 128, 0.2);
+    color: #d1d5db !important;
+    border-color: #4b5563;
+}
+
+.status-healthy {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399 !important;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.status-degraded {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.status-offline {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: currentColor;
+    display: inline-block;
+    box-shadow: 0 0 6px currentColor;
 }
 
 /* Meta Banner */
@@ -148,15 +263,20 @@ body {
 .controls-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 1rem;
 }
 
-.controls-header h2 {
+.controls-title-group h2 {
     font-size: 1.15rem;
-    font-weight: 600;
+    font-weight: 700;
+}
+
+.transit-subhead {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
 }
 
 .dataset-presets {
@@ -165,13 +285,17 @@ body {
     gap: 0.5rem;
     flex-wrap: wrap;
     font-size: 0.85rem;
+}
+
+.preset-label {
     color: var(--text-secondary);
+    font-size: 0.8rem;
 }
 
 /* Buttons */
 .btn {
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
     padding: 0.45rem 0.85rem;
     border-radius: 5px;
     border: 1px solid transparent;
@@ -180,12 +304,13 @@ body {
 }
 
 .btn-primary {
-    background: var(--primary);
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
     color: #ffffff;
+    border: 1px solid #3b82f6;
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover);
+    background: #1d4ed8;
 }
 
 .btn-secondary {
@@ -221,12 +346,13 @@ body {
 
 .btn-danger-sm {
     background: transparent;
-    color: #ef4444;
+    color: #f87171;
     border: 1px solid #ef4444;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;
     cursor: pointer;
+    font-weight: 700;
 }
 
 .btn-danger-sm:hover {
@@ -248,14 +374,14 @@ body {
 }
 
 .data-table th, .data-table td {
-    padding: 0.6rem 0.75rem;
+    padding: 0.65rem 0.75rem;
     border-bottom: 1px solid var(--border-color);
 }
 
 .data-table th {
     background-color: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-weight: 600;
+    color: #cbd5e1;
+    font-weight: 700;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
@@ -293,6 +419,7 @@ body {
 .calc-group label {
     font-size: 0.85rem;
     color: var(--text-secondary);
+    font-weight: 500;
 }
 
 .input-sm {
@@ -332,37 +459,62 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.metric-transit {
+    border-left: 4px solid var(--transit-cyan);
+}
+
+.metric-critical-highlight {
+    border-left: 4px solid var(--critical);
 }
 
 .metric-title {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+
+.metric-value-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
 }
 
 .metric-value {
     font-size: 1.65rem;
-    font-weight: 700;
+    font-weight: 800;
     color: #ffffff;
+}
+
+.metric-unit {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--transit-cyan);
 }
 
 .metric-sub {
     font-size: 0.75rem;
     color: var(--text-muted);
+    margin-top: 0.25rem;
 }
 
 .critical-text {
-    color: var(--critical);
+    color: #f87171;
     font-family: monospace;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     word-break: break-all;
 }
 
 /* Probability Card */
 .probability-card {
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid var(--transit-amber);
     margin-bottom: 1.25rem;
 }
 
@@ -394,12 +546,12 @@ body {
 }
 
 .prob-badge {
-    background: rgba(6, 182, 212, 0.2);
-    color: var(--accent);
-    border: 1px solid var(--accent);
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 1.1rem;
 }
 
@@ -413,27 +565,38 @@ body {
     margin-top: 0.25rem;
 }
 
-/* Result Table highlights */
+/* Results Table & HIGH-CONTRAST Badges */
 .result-table tr.critical-row {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: rgba(239, 68, 68, 0.14) !important;
+}
+
+.result-table tr.critical-row:hover {
+    background-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 .badge-critical {
-    background: rgba(239, 68, 68, 0.2);
-    color: var(--critical);
-    border: 1px solid var(--critical);
-    padding: 0.15rem 0.5rem;
+    background: rgba(239, 68, 68, 0.22);
+    color: #f87171;
+    border: 1px solid #ef4444;
+    padding: 0.2rem 0.55rem;
     border-radius: 4px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: inline-block;
 }
 
+/* High Contrast NORMAL Badge */
 .badge-normal {
-    background: rgba(156, 163, 175, 0.15);
-    color: var(--text-secondary);
-    padding: 0.15rem 0.5rem;
+    background: #0f3460;
+    color: #93c5fd;
+    border: 1px solid #3b82f6;
+    padding: 0.2rem 0.55rem;
     border-radius: 4px;
     font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: inline-block;
 }
 
 /* Visualizations */
@@ -449,11 +612,12 @@ body {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 0.4rem 0.8rem;
+    padding: 0.4rem 0.9rem;
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     border-radius: 4px;
+    transition: all 0.15s ease;
 }
 
 .tab-btn.active {
@@ -466,6 +630,7 @@ body {
     gap: 1.5rem;
     margin-bottom: 0.75rem;
     font-size: 0.8rem;
+    flex-wrap: wrap;
 }
 
 .badge-dot {
@@ -477,11 +642,11 @@ body {
 }
 
 .dot-critical { background-color: var(--critical); }
-.dot-normal { background-color: var(--accent); }
+.dot-normal { background-color: #60a5fa; }
 
 .svg-container {
     width: 100%;
-    min-height: 280px;
+    min-height: 290px;
     background: #0d121f;
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -516,6 +681,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     padding-right: 0.5rem;
+    color: #cbd5e1;
 }
 
 .gantt-track {
@@ -534,7 +700,7 @@ body {
     align-items: center;
     padding: 0 0.5rem;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #ffffff;
     box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
@@ -567,7 +733,7 @@ body {
     background: #2563eb;
     color: #ffffff;
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
@@ -585,7 +751,7 @@ body {
 
 .sdg-card h4 {
     font-size: 0.95rem;
-    color: var(--accent);
+    color: var(--transit-cyan);
     margin-bottom: 0.5rem;
 }
 

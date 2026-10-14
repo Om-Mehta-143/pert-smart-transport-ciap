@@ -11,13 +11,40 @@
     <header class="navbar">
         <div class="nav-container">
             <div class="brand">
-                <span class="brand-badge">CIAP</span>
-                <h1>PERT & Critical Path Analyzer</h1>
+                <div class="transit-icon-box">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="15" rx="3"></rect>
+                        <circle cx="7.5" cy="14.5" r="1.5" fill="currentColor"></circle>
+                        <circle cx="16.5" cy="14.5" r="1.5" fill="currentColor"></circle>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="18" x2="7" y2="21"></line>
+                        <line x1="15" y1="18" x2="17" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="brand-text-group">
+                    <div class="brand-title-row">
+                        <span class="brand-badge">TRANSIT-NET</span>
+                        <h1>PERT & Critical Path Analyzer</h1>
+                    </div>
+                    <!-- Transport Route-Line Motif -->
+                    <div class="route-line-motif" title="Smart City Transit Route 9 Interconnect">
+                        <span class="route-node node-depot" title="Depot"></span>
+                        <span class="route-segment seg-active"></span>
+                        <span class="route-node node-gps" title="GPS Ingestion"></span>
+                        <span class="route-segment seg-active"></span>
+                        <span class="route-node node-cloud" title="Cloud Stream"></span>
+                        <span class="route-segment seg-branch"></span>
+                        <span class="route-node node-fleet" title="Fleet Rollout"></span>
+                        <span class="route-tag">ROUTE-LINE 09</span>
+                    </div>
+                </div>
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link">Dashboard</a>
                 <a href="/sdg" class="nav-link active">SDG 9 & 11 Alignment</a>
-                <a href="/healthz" target="_blank" class="nav-link status-pill">Status: Online</a>
+                <a href="/health" target="_blank" id="health-pill" class="nav-link status-pill status-checking">
+                    <span class="pulse-dot"></span> Checking /health...
+                </a>
             </nav>
         </div>
     </header>
@@ -102,5 +129,7 @@
             <p>DevSecOps CIAP Microproject | SAKEC 2026-27 | Om Vivek Mehta (124BTCS1021)</p>
         </div>
     </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

@@ -3,21 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PERT & Critical Path Analysis | Smart Transportation</title>
-    <meta name="description" content="PERT and Critical Path Analysis for Smart Transportation Applications. Automated project scheduling, probabilistic duration modeling, and network visualization.">
+    <title>PERT & Critical Path Analysis | Smart Transportation Operations</title>
+    <meta name="description" content="PERT and Critical Path Analysis for Smart Transportation Applications. Automated transit project scheduling, probabilistic duration modeling, and network visualization.">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <header class="navbar">
         <div class="nav-container">
             <div class="brand">
-                <span class="brand-badge">CIAP</span>
-                <h1>PERT & Critical Path Analyzer</h1>
+                <div class="transit-icon-box">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="15" rx="3"></rect>
+                        <circle cx="7.5" cy="14.5" r="1.5" fill="currentColor"></circle>
+                        <circle cx="16.5" cy="14.5" r="1.5" fill="currentColor"></circle>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="18" x2="7" y2="21"></line>
+                        <line x1="15" y1="18" x2="17" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="brand-text-group">
+                    <div class="brand-title-row">
+                        <span class="brand-badge">TRANSIT-NET</span>
+                        <h1>PERT & Critical Path Analyzer</h1>
+                    </div>
+                    <!-- Transport Route-Line Motif -->
+                    <div class="route-line-motif" title="Smart City Transit Route 9 Interconnect">
+                        <span class="route-node node-depot" title="Depot"></span>
+                        <span class="route-segment seg-active"></span>
+                        <span class="route-node node-gps" title="GPS Ingestion"></span>
+                        <span class="route-segment seg-active"></span>
+                        <span class="route-node node-cloud" title="Cloud Stream"></span>
+                        <span class="route-segment seg-branch"></span>
+                        <span class="route-node node-fleet" title="Fleet Rollout"></span>
+                        <span class="route-tag">ROUTE-LINE 09</span>
+                    </div>
+                </div>
             </div>
             <nav class="nav-links">
                 <a href="/" class="nav-link active">Dashboard</a>
                 <a href="/sdg" class="nav-link">SDG 9 & 11 Alignment</a>
-                <a href="/healthz" target="_blank" class="nav-link status-pill">Status: Online</a>
+                <a href="/health" target="_blank" id="health-pill" class="nav-link status-pill status-checking">
+                    <span class="pulse-dot"></span> Checking /health...
+                </a>
             </nav>
         </div>
     </header>
@@ -39,9 +66,12 @@
         <!-- Top Actions & Quick Load -->
         <section class="card controls-card">
             <div class="controls-header">
-                <h2>Project Activities Input</h2>
+                <div class="controls-title-group">
+                    <h2>Smart Transportation Project Activities</h2>
+                    <span class="transit-subhead">Input optimistic (O), most likely (M), and pessimistic (P) activity durations</span>
+                </div>
                 <div class="dataset-presets">
-                    <span>Preload Datasets:</span>
+                    <span class="preset-label">Preload Datasets:</span>
                     <button type="button" id="btn-load-transit" class="btn btn-secondary">Smart Bus Transit System</button>
                     <button type="button" id="btn-load-ciap" class="btn btn-secondary">CIAP 3-Day Delivery Plan</button>
                     <button type="button" id="btn-clear" class="btn btn-outline-danger">Clear All</button>
@@ -57,10 +87,10 @@
                             <tr>
                                 <th style="width: 10%;">ID *</th>
                                 <th style="width: 30%;">Activity Name</th>
-                                <th style="width: 20%;">Predecessors (comma-separated)</th>
-                                <th style="width: 12%;">Optimistic (O)</th>
-                                <th style="width: 12%;">Most Likely (M)</th>
-                                <th style="width: 12%;">Pessimistic (P)</th>
+                                <th style="width: 20%;">Predecessors (IDs)</th>
+                                <th style="width: 12%;">Optimistic (O) Days</th>
+                                <th style="width: 12%;">Most Likely (M) Days</th>
+                                <th style="width: 12%;">Pessimistic (P) Days</th>
                                 <th style="width: 4%;">Action</th>
                             </tr>
                         </thead>
@@ -73,8 +103,8 @@
                 <div class="table-actions">
                     <button type="button" id="btn-add-row" class="btn btn-outline">+ Add Activity</button>
                     <div class="calc-group">
-                        <label for="target-deadline-input">Target Deadline (Days/Hours):</label>
-                        <input type="number" id="target-deadline-input" step="0.1" placeholder="e.g. 24.0" class="input-sm">
+                        <label for="target-deadline-input">Target Deadline (Days):</label>
+                        <input type="number" id="target-deadline-input" step="0.1" placeholder="e.g. 26.0" class="input-sm">
                         <button type="submit" id="btn-calculate" class="btn btn-primary">Run PERT & CPA Analysis</button>
                     </div>
                 </div>
@@ -84,31 +114,40 @@
         <!-- Metrics & Probability Cards -->
         <section id="results-summary" class="hidden">
             <div class="metrics-grid">
-                <div class="metric-card">
+                <div class="metric-card metric-transit">
                     <div class="metric-title">Expected Project Duration (T<sub>E</sub>)</div>
-                    <div class="metric-value" id="val-duration">0.00</div>
-                    <div class="metric-sub">Time units (Days / Hours)</div>
+                    <div class="metric-value-wrap">
+                        <span class="metric-value" id="val-duration">0.00</span>
+                        <span class="metric-unit">Days</span>
+                    </div>
+                    <div class="metric-sub">Sum of critical activities</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-title">Critical Path Duration</div>
+                <div class="metric-card metric-critical-highlight">
+                    <div class="metric-title">Critical Path Sequence</div>
                     <div class="metric-value critical-text" id="val-critical-path">-</div>
                     <div class="metric-sub" id="val-cp-count">1 Path(s) Identified</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-title">Project Variance (&sigma;<sup>2</sup>)</div>
-                    <div class="metric-value" id="val-variance">0.00</div>
-                    <div class="metric-sub">Sum of critical variances</div>
+                    <div class="metric-value-wrap">
+                        <span class="metric-value" id="val-variance">0.0000</span>
+                        <span class="metric-unit">Days<sup>2</sup></span>
+                    </div>
+                    <div class="metric-sub">Full float precision (no rounding drift)</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-title">Project Std Deviation (&sigma;)</div>
-                    <div class="metric-value" id="val-std-dev">0.00</div>
-                    <div class="metric-sub">Square root of variance</div>
+                    <div class="metric-value-wrap">
+                        <span class="metric-value" id="val-std-dev">0.0000</span>
+                        <span class="metric-unit">Days</span>
+                    </div>
+                    <div class="metric-sub">Square root of critical variance</div>
                 </div>
             </div>
 
             <!-- Probability Analysis Card -->
             <div class="card probability-card" id="prob-card">
-                <h3>Probabilistic Completion Analysis (Central Limit Theorem)</h3>
+                <h3>Probabilistic Schedule Completion Risk (Central Limit Theorem)</h3>
                 <div class="prob-content">
                     <div class="prob-stat">
                         <span class="prob-label">Target Deadline:</span>
@@ -119,19 +158,19 @@
                         <strong id="prob-zscore">-</strong>
                     </div>
                     <div class="prob-stat">
-                        <span class="prob-label">Completion Probability:</span>
+                        <span class="prob-label">Completion Confidence:</span>
                         <span class="prob-badge" id="prob-percent">0%</span>
                     </div>
                 </div>
                 <div class="prob-notes">
-                    <p><strong>Underlying Assumptions:</strong></p>
+                    <p><strong>Underlying Modeling Assumptions:</strong></p>
                     <ul id="prob-assumptions"></ul>
                 </div>
             </div>
 
             <!-- Activity Schedule Table (ES, EF, LS, LF, Slack) -->
             <div class="card">
-                <h3>Schedule Calculation Results & Activity Slack</h3>
+                <h3>Transit Activity Schedule Calculations (Days)</h3>
                 <div class="table-responsive">
                     <table class="data-table result-table">
                         <thead>
@@ -139,13 +178,13 @@
                                 <th>ID</th>
                                 <th>Activity Name</th>
                                 <th>Predecessors</th>
-                                <th>T<sub>E</sub> (Expected)</th>
+                                <th>T<sub>E</sub> (Days)</th>
                                 <th>Variance</th>
-                                <th>ES</th>
-                                <th>EF</th>
-                                <th>LS</th>
-                                <th>LF</th>
-                                <th>Slack (Float)</th>
+                                <th>ES (Days)</th>
+                                <th>EF (Days)</th>
+                                <th>LS (Days)</th>
+                                <th>LF (Days)</th>
+                                <th>Slack (Days)</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -159,14 +198,14 @@
             <!-- Visualizations Tab -->
             <div class="card">
                 <div class="tabs-header">
-                    <button type="button" class="tab-btn active" data-tab="network-view">AOA / AON Network Diagram</button>
+                    <button type="button" class="tab-btn active" data-tab="network-view">AON Network Diagram</button>
                     <button type="button" class="tab-btn" data-tab="gantt-view">Gantt Schedule View</button>
                 </div>
 
                 <div class="tab-content" id="network-view">
                     <div class="diagram-legend">
-                        <span class="legend-item"><span class="badge-dot dot-critical"></span> Critical Path Activity</span>
-                        <span class="legend-item"><span class="badge-dot dot-normal"></span> Non-Critical Activity (Has Slack)</span>
+                        <span class="legend-item"><span class="badge-dot dot-critical"></span> Critical Path Activity (0 Days Slack)</span>
+                        <span class="legend-item"><span class="badge-dot dot-normal"></span> Normal Activity (Contains Buffer / Slack)</span>
                     </div>
                     <div class="svg-container" id="network-svg-container">
                         <!-- SVG Drawn dynamically -->
@@ -185,7 +224,7 @@
     <footer class="footer">
         <div class="footer-container">
             <p>DevSecOps CIAP Microproject | Academic Year 2026-27 | Om Vivek Mehta | Department of Cybersecurity, SAKEC</p>
-            <p class="footer-sub">Secure by Design | Pinned Python Stack | Multi-Stage Docker | Jenkins CI/CD | Terraform AWS Free Tier</p>
+            <p class="footer-sub">Smart Transportation Operations | Pinned Python Stack | Multi-Stage Docker | Jenkins CI/CD | Terraform AWS Free Tier</p>
         </div>
     </footer>
 
