@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Development Goals (SDG 9 & 11) Alignment | CIAP Microproject</title>
+    <meta name="description" content="Technical alignment of PERT and Critical Path Analysis with United Nations Sustainable Development Goals SDG 9 and SDG 11.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand">
+                <span class="brand-badge">CIAP</span>
+                <h1>PERT & Critical Path Analyzer</h1>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/sdg" class="nav-link active">SDG 9 & 11 Alignment</a>
+                <a href="/healthz" target="_blank" class="nav-link status-pill">Status: Online</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="meta-banner">
+            <div class="meta-col">
+                <strong>Project:</strong> PERT & Critical Path Analysis for Smart Transportation
+            </div>
+            <div class="meta-col">
+                <strong>Author:</strong> Om Vivek Mehta (TYCS_25 | PRN: 124BTCS1021)
+            </div>
+            <div class="meta-col">
+                <strong>Institution:</strong> SAKEC - Department of Cybersecurity
+            </div>
+        </section>
+
+        <section class="card sdg-detail-card">
+            <h2>United Nations Sustainable Development Goals (SDG) Alignment</h2>
+            <p class="lead-text">
+                This project focuses on the practical application of quantitative project management (PERT/CPA)
+                coupled with DevSecOps engineering principles to modernize public transit infrastructure and digital delivery systems.
+            </p>
+
+            <div class="sdg-grid">
+                <!-- Primary SDG 9 -->
+                <article class="sdg-card primary-sdg">
+                    <div class="sdg-badge">Primary Goal</div>
+                    <h3>SDG 9: Industry, Innovation, and Infrastructure</h3>
+                    <h4>Target 9.1 & 9.4 Alignment</h4>
+                    <p>
+                        <strong>Target 9.1:</strong> <em>Develop quality, reliable, sustainable and resilient infrastructure, including regional and transborder infrastructure, to support economic development and human well-being.</em>
+                    </p>
+                    <p>
+                        <strong>Engineering Contribution:</strong>
+                        Modern smart transportation systems (such as automated vehicle location, fleet telemetry, and real-time transit APIs)
+                        consist of interdependent cyber-physical deliverables. By replacing intuitive or static scheduling with PERT probabilistic modeling:
+                    </p>
+                    <ul>
+                        <li>Hardware and cloud dependencies are rigorously sequenced, preventing bottlenecks during infrastructure modernization.</li>
+                        <li>Critical paths identify high-risk integration stages early (e.g., GPS hardware testing, API ingestion gateways), preventing public transit deployment delays.</li>
+                        <li>Automated DevSecOps pipelines ensure digital transport infrastructure is continuously audited for CVEs and configuration flaws before field rollout.</li>
+                    </ul>
+                </article>
+
+                <!-- Supporting SDG 11 -->
+                <article class="sdg-card supporting-sdg">
+                    <div class="sdg-badge secondary">Supporting Goal</div>
+                    <h3>SDG 11: Sustainable Cities and Communities</h3>
+                    <h4>Target 11.2 Alignment</h4>
+                    <p>
+                        <strong>Target 11.2:</strong> <em>Provide access to safe, affordable, accessible and sustainable transport systems for all, notably by expanding public transport.</em>
+                    </p>
+                    <p>
+                        <strong>Engineering Contribution:</strong>
+                        Urban commuters heavily rely on predictable, high-frequency public transportation. The rollout of smart transit features—such as live bus tracking, digital ticketing, and passenger load estimation—directly determines commuter adoption of public transit over private fossil-fuel vehicles:
+                    </p>
+                    <ul>
+                        <li>Mathematical variance calculation (&sigma;<sup>2</sup>) gives urban transit authorities realistic confidence intervals for launch dates.</li>
+                        <li>Z-score probability calculations allow transport directors to evaluate budget-deadline tradeoffs with data-driven accuracy rather than speculative estimations.</li>
+                        <li>Enables municipalities to coordinate multiple parallel transit works without overlapping service disruptions.</li>
+                    </ul>
+                </article>
+            </div>
+
+            <!-- Realistic Boundaries Section -->
+            <div class="sdg-limits-box">
+                <h4>Scope Boundaries and Objective Assessment</h4>
+                <p>
+                    To maintain strict technical integrity, this software does not purport to directly eliminate urban emissions or manufacture transit physical hardware. Rather, it serves as a decision-support and pipeline automation tool:
+                </p>
+                <ol>
+                    <li>It provides reliable scheduling analytics under uncertainty for engineering teams deploying civic transport technology.</li>
+                    <li>It enforces DevSecOps quality gates so that public digital utilities deployed on cloud infrastructure (AWS) are safeguarded against cyber threats, data tampering, and service outages.</li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>DevSecOps CIAP Microproject | SAKEC 2026-27 | Om Vivek Mehta (124BTCS1021)</p>
+        </div>
+    </footer>
+</body>
+</html>
