@@ -1,0 +1,84 @@
+<mxfile host="app.diagrams.net" modified="2026-10-14T17:42:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="pert-cicd-pipeline" name="PERT DevSecOps Pipeline Flow">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Developer Stage -->
+        <mxCell id="dev-node" value="Developer Workstation&#xa;• Om Vivek Mehta (WSL2/Win11)&#xa;• git commit -m &quot;...&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#3b82f6;strokeWidth=2;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="240" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- GitHub SCM -->
+        <mxCell id="github-node" value="GitHub Repository&#xa;pert-smart-transport-ciap&#xa;(Branch: main / develop)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=#6b7280;strokeWidth=2;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="240" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-dev-git" value="git push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3b82f6;strokeWidth=2;fontColor=#3b82f6;" edge="1" parent="1" source="dev-node" target="github-node" />
+
+        <!-- Jenkins Swimlane -->
+        <mxCell id="jenkins-group" value="Jenkins Declarative CI/CD Pipeline (Build #8 Verified)&#xa;local-jenkins (Port 8080) | Local Host Docker Integration" style="swimlane;whiteSpace=wrap;html=1;fillColor=#0b0f19;strokeColor=#2563eb;strokeWidth=2;fontColor=#f3f4f6;fontStyle=1;fontSize=12;startSize=40;" vertex="1" parent="1">
+          <mxGeometry x="450" y="40" width="680" height="480" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 1: Checkout -->
+        <mxCell id="st-checkout" value="1. Checkout SCM&#xa;Clone Git commit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="30" y="60" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 2: Test -->
+        <mxCell id="st-test" value="2. Build &amp; Test&#xa;python3 -m unittest&#xa;(13 Tests Passed)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="190" y="60" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 3: SonarQube -->
+        <mxCell id="st-sonar" value="3. SonarQube Scan&#xa;sonar-scanner&#xa;Code quality &amp; smells" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="350" y="60" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 4: Quality Gate -->
+        <mxCell id="st-qg" value="4. Quality Gate&#xa;waitForQualityGate()&#xa;Status: OK / Passed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="510" y="60" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 5: Trivy FS -->
+        <mxCell id="st-trivy-fs" value="5. Trivy FS Scan&#xa;trivy fs&#xa;0 pip vulnerabilities" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="510" y="180" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 6: Docker Build -->
+        <mxCell id="st-dock-build" value="6. Docker Build&#xa;Multi-stage python:3.11&#xa;UID 10001 (Non-root)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="350" y="180" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 7: Trivy Image -->
+        <mxCell id="st-trivy-img" value="7. Trivy Image Scan&#xa;trivy image&#xa;App layer: 0 CVEs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="190" y="180" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 8: Docker Push -->
+        <mxCell id="st-dock-push" value="8. Docker Hub Push&#xa;docker push&#xa;1.0.0 &amp; latest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#10b981;fontColor=#ffffff;fontSize=10;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="30" y="180" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 9: Deployment -->
+        <mxCell id="st-deploy" value="9. Deploy &amp; Health Probe&#xa;docker run -p 5000:5000&#xa;curl http://localhost:5000/health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f291e;strokeColor=#10b981;strokeWidth=2;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="jenkins-group">
+          <mxGeometry x="190" y="320" width="290" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Internal Pipeline Connections -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-checkout" target="st-test" />
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-test" target="st-sonar" />
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-sonar" target="st-qg" />
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-qg" target="st-trivy-fs" />
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-trivy-fs" target="st-dock-build" />
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-dock-build" target="st-trivy-img" />
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-trivy-img" target="st-dock-push" />
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#10b981;strokeWidth=2;" edge="1" parent="jenkins-group" source="st-dock-push" target="st-deploy" />
+
+        <mxCell id="edge-git-jenkins" value="SCM Poll / Trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#06b6d4;strokeWidth=2;fontColor=#06b6d4;" edge="1" parent="1" source="github-node" target="st-checkout" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
