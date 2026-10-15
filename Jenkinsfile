@@ -1,179 +1,90 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = 'jinwooarise/pert-smart-transport'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
-        DOCKER_HUB_CRED = 'dockerhub-credentials'
-        SONAR_CRED = 'sonar-token'
-        CONTAINER_NAME = 'pert-app-prod'
-        HOST_PORT = '5000'
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Git branch to build')
     }
 
-    options {
-        timeout(time: 20, unit: 'MINUTES')
-        disableConcurrentBuilds()
+    environment {
+        IMAGE_NAME = "pert-smart-transport"
+        IMAGE_TAG  = "v1"
+        REPO_URL   = "https://github.com/Om-Mehta-143/pert-smart-transport-ciap.git"
+        SONAR_HOST = "http://sonarqube:9000"
+        SONAR_KEY  = "pert-smart-transport-ciap"
+        CONTAINER_NAME = "pert-app-prod"
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                echo 'Checking out source repository...'
-                checkout scm
+                git branch: "${params.BRANCH}", url: "${REPO_URL}"
             }
         }
 
-        stage('Build & Test') {
+        stage('Unit Testing') {
             steps {
-                echo 'Executing 13 automated unit tests via Python 3...'
-                sh '''
-                    python3 -m unittest -v test_pert.py
-                '''
+                sh 'python3 -m unittest test_pert.py'
             }
         }
 
-        stage('SonarQube Static Analysis') {
+        stage('SonarQube Scan') {
             steps {
-                echo 'Executing SonarQube Scanner code quality and security analysis...'
-                withCredentials([string(credentialsId: "${SONAR_CRED}", variable: 'SONAR_AUTH_TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         sonar-scanner \
-                            -Dsonar.host.url="http://sonarqube:9000" \
-                            -Dsonar.token="${SONAR_AUTH_TOKEN}" \
-                            -Dsonar.projectKey="pert-smart-transport-ciap" \
-                            -Dsonar.sources="." \
-                            -Dsonar.inclusions="app.py,pert_engine.py,static/**,templates/**" \
-                            -Dsonar.exclusions="venv/**,terraform/**" \
-                            -Dsonar.tests="." \
-                            -Dsonar.test.inclusions="test_pert.py" || true
+                          -Dsonar.host.url="${SONAR_HOST}" \
+                          -Dsonar.token="${SONAR_TOKEN}" \
+                          -Dsonar.login="${SONAR_TOKEN}" \
+                          -Dsonar.projectKey="${SONAR_KEY}" \
+                          -Dsonar.sources="." \
+                          -Dsonar.inclusions="app.py,pert_engine.py,static/**,templates/**" \
+                          -Dsonar.exclusions="venv/**,terraform/**" || true
                     '''
                 }
             }
         }
 
-        stage('SonarQube Quality Gate') {
+        stage('Build Docker Image') {
             steps {
-                echo 'Evaluating SonarQube Quality Gate metrics...'
-                timeout(time: 2, unit: 'MINUTES') {
-                    script {
-                        try {
-                            def qg = waitForQualityGate()
-                            echo "SonarQube Quality Gate status: ${qg.status}"
-                        } catch (Exception e) {
-                            echo "Quality Gate evaluation recorded: ${e.message}"
-                        }
-                    }
-                }
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .'
             }
         }
 
-        stage('Trivy Filesystem Vulnerability Scan') {
+        stage('Trivy Scan') {
             steps {
-                echo 'Executing Trivy filesystem dependency vulnerability scan...'
-                sh '''
-                    trivy fs \
-                        --severity HIGH,CRITICAL \
-                        --format table \
-                        --output trivy-fs-report.txt \
-                        . || true
-                    cat trivy-fs-report.txt || true
-                '''
-            }
-        }
-
-        stage('Docker Image Build') {
-            steps {
-                echo "Building production Docker image: ${IMAGE_NAME}:${IMAGE_TAG} and ${IMAGE_NAME}:latest..."
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
-                """
-            }
-        }
-
-        stage('Trivy Container Image Scan') {
-            steps {
-                echo "Scanning container image ${IMAGE_NAME}:${IMAGE_TAG} with Trivy..."
-                sh """
-                    trivy image \
-                        --severity HIGH,CRITICAL \
-                        --format table \
-                        --output trivy-image-report.txt \
-                        ${IMAGE_NAME}:${IMAGE_TAG} || true
-
-                    curl -fsSL -o html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl || true
-                    trivy image \
-                        --severity HIGH,CRITICAL \
-                        --format template \
-                        --template "@html.tpl" \
-                        --output trivy-report.html \
-                        ${IMAGE_NAME}:${IMAGE_TAG} || true
-
-                    cat trivy-image-report.txt || true
-                """
-                publishHTML(target: [
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'trivy-report.html',
-                    reportName: 'Trivy Scan Report'
-                ])
-            }
-        }
-
-        stage('Docker Hub Push') {
-            steps {
-                echo 'Authenticating and pushing image to Docker Hub...'
                 script {
-                    try {
-                        withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CRED}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                            sh """
-                                echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
-                                docker push ${IMAGE_NAME}:${IMAGE_TAG} || true
-                                docker push ${IMAGE_NAME}:latest || true
-                                docker logout || true
-                            """
-                        }
-                    } catch (Exception e) {
-                        echo "Docker Hub registry synchronized with existing verified release."
-                    }
+                    sh '''
+                        curl -fsSL -o html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl || true
+                        trivy image \
+                          --severity HIGH,CRITICAL \
+                          --format template \
+                          --template "@html.tpl" \
+                          -o trivy-report.html \
+                          ${IMAGE_NAME}:${IMAGE_TAG} || true
+                    '''
+
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'trivy-report.html',
+                        reportName: 'Trivy Scan Report'
+                    ])
                 }
             }
         }
 
-        stage('Automated Deployment') {
+        stage('Deploy Container') {
             steps {
-                echo 'Deploying application container with health monitoring...'
-                sh """
+                sh '''
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
-
-                    docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        --restart unless-stopped \
-                        -p ${HOST_PORT}:5000 \
-                        ${IMAGE_NAME}:latest
-
-                    sleep 5
+                    docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
+                    sleep 3
                     docker ps --filter "name=${CONTAINER_NAME}"
-                """
+                '''
             }
-        }
-    }
-
-    post {
-        always {
-            archiveArtifacts artifacts: 'trivy-*.txt, trivy-*.html', allowEmptyArchive: true
-            echo 'Build cycle completed. Security artifacts archived.'
-        }
-        success {
-            echo "CI/CD Pipeline finished successfully for build ${env.BUILD_NUMBER}."
-        }
-        failure {
-            echo "Pipeline FAILED on build ${env.BUILD_NUMBER}. Review stage logs."
-        }
-        cleanup {
-            cleanWs()
         }
     }
 }
