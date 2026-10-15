@@ -12,6 +12,8 @@ pipeline {
         SONAR_HOST = "http://sonarqube:9000"
         SONAR_KEY  = "pert-smart-transport-ciap"
         CONTAINER_NAME = "pert-app-prod"
+        ECR_REPO   = "821302803491.dkr.ecr.ap-southeast-2.amazonaws.com/pert-smart-transport-ciap"
+        AWS_REGION = "ap-southeast-2"
     }
 
     stages {
@@ -71,6 +73,31 @@ pipeline {
                         reportFiles: 'trivy-report.html',
                         reportName: 'Trivy Scan Report'
                     ])
+                }
+            }
+        }
+
+        stage('Push to AWS ECR') {
+            steps {
+                echo 'Authenticating and pushing image to AWS ECR...'
+                script {
+                    try {
+                        withCredentials([
+                            string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                        ]) {
+                            sh '''
+                                aws ecr get-login-password --region ${AWS_REGION} \
+                                  | docker login --username AWS --password-stdin ${ECR_REPO}
+                                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
+                                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:latest
+                                docker push ${ECR_REPO}:${IMAGE_TAG}
+                                docker push ${ECR_REPO}:latest
+                            '''
+                        }
+                    } catch (Exception e) {
+                        echo "ECR Push note: ${e.message}"
+                    }
                 }
             }
         }
