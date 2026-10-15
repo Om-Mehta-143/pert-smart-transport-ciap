@@ -99,8 +99,25 @@ pipeline {
                         --format table \
                         --output trivy-image-report.txt \
                         ${IMAGE_NAME}:${IMAGE_TAG} || true
+
+                    curl -fsSL -o html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl || true
+                    trivy image \
+                        --severity HIGH,CRITICAL \
+                        --format template \
+                        --template "@html.tpl" \
+                        --output trivy-report.html \
+                        ${IMAGE_NAME}:${IMAGE_TAG} || true
+
                     cat trivy-image-report.txt || true
                 """
+                publishHTML(target: [
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: '.',
+                    reportFiles: 'trivy-report.html',
+                    reportName: 'Trivy Scan Report'
+                ])
             }
         }
 
@@ -146,7 +163,7 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'trivy-*.txt', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'trivy-*.txt, trivy-*.html', allowEmptyArchive: true
             echo 'Build cycle completed. Security artifacts archived.'
         }
         success {
