@@ -77,6 +77,13 @@ id_rsa.pub
 .env
 .env.*
 
+# Local Lab Reference & Scratch
+.sakec-lab-ref/
+scratch/
+trivy-*.txt
+trivy-*.json
+generate_trivy_html.py
+
 # OS generated files
 .DS_Store
 .DS_Store?
