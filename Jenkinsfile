@@ -87,8 +87,12 @@ pipeline {
                             string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                         ]) {
                             sh '''
-                                aws ecr get-login-password --region ${AWS_REGION} \
-                                  | docker login --username AWS --password-stdin ${ECR_REPO}
+                                if which ecr-login > /dev/null 2>&1; then
+                                    ecr-login ${AWS_REGION}
+                                else
+                                    aws ecr get-login-password --region ${AWS_REGION} \
+                                      | docker login --username AWS --password-stdin ${ECR_REPO}
+                                fi
                                 docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
                                 docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:latest
                                 docker push ${ECR_REPO}:${IMAGE_TAG}
