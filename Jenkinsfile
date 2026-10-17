@@ -11,7 +11,6 @@ pipeline {
         REPO_URL   = "https://github.com/Om-Mehta-143/pert-smart-transport-ciap.git"
         SONAR_HOST = "http://sonarqube:9000"
         SONAR_KEY  = "pert-smart-transport-ciap"
-        CONTAINER_NAME = "pert-app-prod"
         ECR_REPO   = "821302803491.dkr.ecr.ap-southeast-2.amazonaws.com/pert-smart-transport-ciap"
         AWS_REGION = "ap-southeast-2"
     }
@@ -20,11 +19,6 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: "${params.BRANCH}", url: "${REPO_URL}"
-            }
-        }
-
-        stage('Unit Testing') {
-            steps {
                 sh 'python3 -m unittest test_pert.py'
             }
         }
@@ -79,42 +73,23 @@ pipeline {
 
         stage('Push to AWS ECR') {
             steps {
-                echo 'Authenticating and pushing image to AWS ECR...'
-                script {
-                    try {
-                        withCredentials([
-                            string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                            string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                        ]) {
-                            sh '''
-                                if which ecr-login > /dev/null 2>&1; then
-                                    ecr-login ${AWS_REGION}
-                                else
-                                    aws ecr get-login-password --region ${AWS_REGION} \
-                                      | docker login --username AWS --password-stdin ${ECR_REPO}
-                                fi
-                                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
-                                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:latest
-                                docker push ${ECR_REPO}:${IMAGE_TAG}
-                                docker push ${ECR_REPO}:latest
-                            '''
-                        }
-                    } catch (Exception e) {
-                        echo "ECR Push note: ${e.message}"
-                    }
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        if which ecr-login > /dev/null 2>&1; then
+                            ecr-login ${AWS_REGION}
+                        else
+                            aws ecr get-login-password --region ${AWS_REGION} \
+                              | docker login --username AWS --password-stdin ${ECR_REPO}
+                        fi
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REPO}:latest
+                        docker push ${ECR_REPO}:${IMAGE_TAG}
+                        docker push ${ECR_REPO}:latest
+                    '''
                 }
-            }
-        }
-
-        stage('Deploy Container') {
-            steps {
-                sh '''
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
-                    docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
-                    sleep 3
-                    docker ps --filter "name=${CONTAINER_NAME}"
-                '''
             }
         }
     }
